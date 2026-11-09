@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kevin Jeo — World Map</title>
+<meta name="description" content="Kevin Jeo: Industrial Engineering student and ERP consultant. An interactive isometric atlas of engineering, ERP and analytics work.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Host+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F3EEE3; --ink:#111111; --orange:#D9541E;
+  --ink-70:rgba(17,17,17,.72); --line:rgba(17,17,17,.2); --orange-16:rgba(217,84,30,.16);
+  /* material shades: cream and ink mixed, orange and ink mixed */
+  --m-top:#FBF8F1; --m-left:#E2DBCD; --m-right:#B3AB9B; --m-ground:#B7C796; --m-road:#E1DBCD; --m-plot:#A9BD86;
+  --leaf:#6E9A58; --leaf-hi:#8DB472; --pine:#4E7F55; --pine-hi:#6A9A69; --trunk:#6B5A45; --roof:#C58B68; --roof-side:#AE7553;
+  --o-top:#E8784A; --o-left:#D9541E; --o-right:#AE4318;
+  --m:clamp(20px,4.5vw,88px);
+  --sans:"Host Grotesk",system-ui,sans-serif; --mono:"DM Mono",ui-monospace,monospace;
+  --ease:cubic-bezier(.22,1,.36,1); --cam:cubic-bezier(.76,0,.24,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+a{color:inherit;text-underline-offset:4px}
+:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+h1:focus{outline:none}
+ul,ol{list-style:none}
+.skip{position:absolute;left:12px;top:-80px;z-index:50;background:var(--ink);color:var(--cream);padding:12px 16px}
+.skip:focus{top:8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-transform:uppercase;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(12px,1.6vw,24px);padding:0 var(--m)}
+.back{display:inline-flex;align-items:center;gap:10px;min-height:44px;font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:500}
+.back:hover{color:var(--ink);text-decoration-color:var(--orange)}
+
+/* navigation */
+.top{position:sticky;top:0;z-index:30;background:var(--cream);box-shadow:0 1px 0 var(--line)}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:64px;padding:0 var(--m)}
+.brand{font-weight:700;letter-spacing:-.02em;font-size:18px;text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
+.nav ul{display:flex;gap:clamp(12px,1.7vw,26px)}
+.nav a{display:inline-flex;align-items:center;gap:6px;min-height:44px;text-decoration:none;font-size:15px;font-weight:500;position:relative}
+.nav a span{font-family:var(--mono);font-size:12px;color:var(--ink-70)}
+.nav a::after{content:"";position:absolute;left:0;right:0;bottom:8px;height:2px;background:var(--orange);transform:scaleX(0);transform-origin:left;transition:transform 180ms var(--ease)}
+.nav a:hover::after,.nav a[aria-current]::after{transform:scaleX(1)}
+.mail{display:inline-flex;align-items:center;min-height:44px;padding:0 22px;border-radius:999px;background:var(--orange);color:var(--ink);font-weight:600;font-size:15px;text-decoration:none;transition:transform 160ms var(--ease),background-color 150ms}
+.mail:hover{background:var(--o-top)}.mail:active{transform:scale(.97)}
+
+/* world */
+.hero{position:relative;min-height:calc(100svh - 65px);overflow:hidden}
+.stage{position:absolute;inset:0 0 0 30%;overflow:hidden;container-type:size}
+.cam{position:absolute;inset:0;margin:auto;width:min(100cqw,calc(100cqh*1380/830));aspect-ratio:1380/830;transform-origin:0 0}
+.cam svg{position:absolute;display:block;overflow:visible}
+.ground,.hits,.art,.tint{inset:0;width:100%;height:100%}
+.copy{position:relative;z-index:2;width:min(31%,470px);padding:clamp(32px,4.5vw,64px) 0 32px var(--m);transition:opacity 260ms}
+.hero.zoom .copy{opacity:0}
+.copy h1{font-size:clamp(72px,7.6vw,118px);font-weight:700;letter-spacing:-.04em;line-height:.92;margin-bottom:28px}
+.statement{font-size:clamp(24px,2.1vw,31px);font-weight:600;letter-spacing:-.025em;line-height:1.14;margin-bottom:20px}
+.statement span:nth-child(2){color:var(--ink-70)}
+.statement span{display:block}
+.copy .intro{margin-bottom:28px;max-width:40ch}
+.hint{display:flex;flex-direction:column;gap:2px;color:var(--ink-70)}
+
+.cam polygon,.cam path{stroke:var(--ink);stroke-width:.7;stroke-linejoin:round}
+.cam .t{fill:var(--m-top)}.cam .l{fill:var(--m-left)}.cam .r{fill:var(--m-right)}
+.cam .gd{fill:var(--m-ground)}.cam .rd{fill:var(--m-road);stroke:none}
+.cam .w{stroke:rgba(17,17,17,.4);stroke-width:.5;fill:none}
+.cam .bed{fill:var(--ink);stroke:none}
+.cam .dash{stroke:var(--cream);stroke-width:1.4;stroke-dasharray:8 9;fill:none}
+.cam .link{fill:var(--m-top);stroke:var(--ink);stroke-width:.6}
+.cam .st{fill:var(--cream);stroke:var(--ink);stroke-width:2.6}
+.stations{inset:0;width:100%;height:100%;pointer-events:none}
+.cam .post{stroke:var(--ink);stroke-width:1.6}
+.cam .sb{fill:var(--cream);stroke:var(--ink);stroke-width:2.2}
+.cam .stn{font:500 14px var(--mono);fill:var(--ink)}
+.cam .chev{fill:none;stroke:var(--orange);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.route{inset:0;width:100%;height:100%;opacity:0;pointer-events:none;transition:opacity 200ms var(--ease)}
+.route.on{opacity:1}
+#routePath{fill:none;stroke:var(--orange);stroke-width:8;stroke-linejoin:round;stroke-linecap:round}
+.car{pointer-events:none;will-change:transform}
+.cam .car .t{fill:var(--o-top)}.cam .car .l{fill:var(--o-left)}.cam .car .r{fill:var(--o-right)}
+.cam .car polygon{stroke-width:.6}
+.cam .wh{fill:var(--ink)}
+.cam .hl{fill:var(--cream);stroke:none}
+.ctx polygon{stroke:rgba(17,17,17,.45)!important}
+.cam .ctx .t{fill:#F7F3EA}.cam .ctx .l{fill:#EFE9DC}.cam .ctx .r{fill:#D3CBBA}
+.cam .ctx .rt{fill:var(--roof)}.cam .ctx .rl{fill:var(--roof-side)}
+.cam .ground .l{fill:#9B8B6D}.cam .ground .r{fill:#7F7259}
+.cam .tk{stroke:var(--trunk);stroke-width:2.2;stroke-linecap:round;fill:none}
+.cam .lfo{fill:var(--leaf);stroke:rgba(17,17,17,.6)!important;stroke-width:1.4}.cam .lf{fill:var(--leaf);stroke:none!important}.cam .lf2{fill:var(--leaf-hi);stroke:none!important}.cam .lf3{fill:#5A8548;stroke:none!important;opacity:.75}
+.cam .pn{fill:var(--pine);stroke:rgba(17,17,17,.55)!important;stroke-width:.7}.cam .pn2{fill:var(--pine-hi);stroke:none!important}
+.cam .plot{fill:var(--m-plot);stroke:rgba(17,17,17,.3);stroke-width:.7}
+.cam .dk{fill:#3A3833}
+.cam .fl{fill:var(--orange)}
+.cam .hand{stroke:var(--ink);stroke-width:1.2;fill:none;stroke-linecap:round}
+.cam .arm{stroke:var(--ink);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+/* buildings are promoted once, then only transform and opacity change */
+.bp{position:absolute;pointer-events:none;will-change:transform;transition:transform 280ms var(--ease)}
+.bp.hot,.bp.sel{transform:translate3d(0,-7px,0)}
+.tint{opacity:0;will-change:opacity;transition:opacity 220ms var(--ease)}
+.cam .tint .t{fill:var(--o-top)}.cam .tint .l{fill:var(--o-left)}.cam .tint .r{fill:var(--o-right)}
+.bp.hot .tint{opacity:.55}.bp.sel .tint{opacity:1}
+.cam .hits polygon{fill:transparent;stroke:none}
+.hits a{cursor:pointer;outline:none}
+.cam .hits a:focus-visible polygon{stroke:var(--orange);stroke-width:2;stroke-dasharray:5 4}
+.lab{position:absolute;transform:translate3d(-50%,-50%,0);cursor:pointer;transition:transform 280ms var(--ease),opacity 180ms}
+.lab span{display:block;background:var(--ink);color:var(--cream);font:500 clamp(10px,.82vw,13px)/1 var(--mono);letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;padding:.55em .7em;transition:background-color 150ms,color 150ms}
+.lab .num{display:none}
+.lab.hot{transform:translate3d(-50%,calc(-50% - 4px),0)}
+.lab.hot span{background:var(--orange);color:var(--ink)}
+.lab.here span::before{content:"";display:inline-block;width:.62em;height:.62em;border-radius:50%;background:var(--orange);margin-right:.5em}
+.hero.zoom .lab{opacity:0}
+.veil{position:fixed;inset:0;z-index:40;background:var(--cream);opacity:0;pointer-events:none;transition:opacity 200ms var(--ease)}
+.veil.on{opacity:1}
+
+/* index under the world */
+.index{padding-top:clamp(64px,8vw,120px);padding-bottom:clamp(64px,8vw,120px)}
+.index h2{grid-column:1/-1;font-size:clamp(36px,4.6vw,68px);letter-spacing:-.04em;line-height:1;font-weight:700;margin-bottom:clamp(28px,4vw,56px)}
+.index ol{grid-column:1/-1}
+.index li a{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(12px,1.6vw,24px);align-items:baseline;padding:22px 0;text-decoration:none;box-shadow:inset 0 1px 0 var(--line)}
+.index li:last-child a{box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line)}
+.index .n{grid-column:span 1;font:500 15px var(--mono)}
+.index .t2{grid-column:span 4;font-size:clamp(24px,2.5vw,36px);font-weight:600;letter-spacing:-.03em;line-height:1.1;transition:transform 240ms var(--ease)}
+.index li a:hover .t2{transform:translate3d(8px,0,0)}
+.index .d{grid-column:span 6}
+.index .ar{grid-column:span 1;text-align:right;font-size:22px;transition:transform 180ms var(--ease)}
+.index li a:hover .ar{transform:translateX(6px);color:var(--orange)}
+
+/* editorial pages */
+.ph .big,.ph .txt{animation:rise 520ms var(--ease) both}
+.ph .txt{animation-delay:70ms}
+@keyframes rise{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
+.ph{padding-top:clamp(28px,4vw,56px);padding-bottom:clamp(48px,6vw,88px);box-shadow:inset 0 -1px 0 var(--line)}
+.ph .big{grid-column:1/5;font-size:clamp(120px,21vw,330px);font-weight:700;letter-spacing:-.07em;line-height:.76;color:var(--orange);margin-left:-.05em;padding-top:12px}
+.ph .txt{grid-column:6/-1;align-self:end}
+.ph .meta{color:var(--ink-70);margin-bottom:14px}
+.ph h1{font-size:clamp(46px,7vw,112px);font-weight:700;letter-spacing:-.04em;line-height:.94;margin-bottom:24px}
+.ph .lead{font-size:clamp(19px,1.6vw,23px);line-height:1.4;max-width:46ch;margin-bottom:20px}
+
+.row{grid-column:1/-1;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));column-gap:clamp(12px,1.6vw,24px);padding:20px 0;box-shadow:inset 0 1px 0 var(--line)}
+.row dt{grid-column:span 3;color:var(--ink-70)}
+.row dd{grid-column:span 7;max-width:62ch}
+.row dd p+p{margin-top:10px}
+.row dd li{padding-left:18px;position:relative;margin-bottom:4px}
+.row dd li::before{content:"";position:absolute;left:0;top:.72em;width:8px;height:2px;background:var(--orange)}
+.stats{display:flex;flex-wrap:wrap;gap:16px clamp(32px,5vw,72px);margin-bottom:10px}
+.stats b{display:block;font-size:clamp(52px,6vw,92px);font-weight:700;letter-spacing:-.05em;line-height:.95;color:var(--orange)}
+.stats span{display:block;font-size:15px;max-width:22ch;margin-top:6px}
+.tags{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--mono);font-size:14px}
+.bars{max-width:520px}
+.bar{display:grid;grid-template-columns:9ch 1fr 5ch;gap:12px;align-items:center;font-family:var(--mono);font-size:14px}
+.bar+.bar{margin-top:8px}
+.bar i{display:block;height:16px;background:var(--orange);transform:scaleX(var(--v));transform-origin:left}
+.bar.was i{background:var(--ink)}
+.bar b{text-align:right;font-weight:500}
+
+.block{padding-top:clamp(48px,6vw,88px);padding-bottom:clamp(48px,6vw,88px);box-shadow:inset 0 -1px 0 var(--line)}
+.block>h2{grid-column:1/5;font-size:clamp(28px,3vw,44px);font-weight:700;letter-spacing:-.035em;line-height:1.02;margin-bottom:24px}
+.block>.body{grid-column:5/-1}
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:4px}
+.flow li{padding:18px 18px 0 0;box-shadow:inset 0 2px 0 var(--ink)}
+.flow li:last-child{box-shadow:inset 0 2px 0 var(--orange)}
+.flow .mono{color:var(--ink-70);display:block;margin-bottom:8px}
+.flow strong{display:block;font-size:24px;letter-spacing:-.025em;line-height:1.1;margin-bottom:6px}
+.flow p{font-size:15px}
+.tl li{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));column-gap:clamp(12px,1.6vw,24px);padding:18px 0;box-shadow:inset 0 1px 0 var(--line)}
+.tl .when{grid-column:span 2;color:var(--ink-70)}
+.tl .what{grid-column:span 6}
+.tl h3{font-size:21px;letter-spacing:-.02em;line-height:1.2}
+.tl .org{font-size:15px;color:var(--ink-70);margin-bottom:6px}
+.tools{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:22px 12px;font-size:14px;font-weight:500;line-height:1.25}
+.tools img,.tools i{width:44px;height:44px;display:block;margin-bottom:8px}
+.tools i{display:grid;place-items:center;border-radius:10px;background:var(--ink);color:var(--cream);font:500 14px var(--mono);letter-spacing:.02em}
+.chips{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:20px;font-weight:500;letter-spacing:-.015em}
+.links{display:flex;flex-wrap:wrap;gap:4px 28px}
+.links a{display:inline-flex;align-items:center;min-height:44px;font-weight:600}
+.pn{padding-top:28px;padding-bottom:28px;align-items:center}
+.pn .back{grid-column:1/7}
+.pn .next{grid-column:7/-1;justify-self:end}
+
+/* cards and their overview */
+.cards-wrap{padding-top:clamp(36px,4vw,64px);padding-bottom:clamp(48px,6vw,88px);box-shadow:inset 0 -1px 0 var(--line)}
+.cards{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,1.6vw,22px)}
+.card{appearance:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;background:#FBF8F1;display:flex;flex-direction:column;padding:0 0 20px;min-width:0;transition:transform 220ms var(--ease)}
+.card:hover{transform:translate3d(0,-4px,0)}.card:active{transform:scale(.985)}
+.tile{display:flex;flex-direction:column;justify-content:flex-end;aspect-ratio:3/2;padding:20px;background:var(--ink);color:var(--cream);margin-bottom:18px;overflow:hidden}
+.tile b{font-size:clamp(56px,5vw,84px);font-weight:700;letter-spacing:-.045em;line-height:.95;color:var(--orange)}
+.tile span{font-size:15px;margin-top:6px}
+.tile.pic{padding:0;background:var(--m-left)}.tile.pic img{width:100%;height:100%;object-fit:cover;object-position:50% 35%;display:block}
+.card .cat{color:var(--ink-70);padding:0 20px;margin-bottom:8px}
+.card .t{font-size:clamp(23px,1.9vw,28px);font-weight:700;letter-spacing:-.03em;line-height:1.08;padding:0 20px;margin-bottom:8px}
+.card .hk{padding:0 20px;font-size:16px;line-height:1.4;margin-bottom:16px}
+.card .go{padding:0 20px;margin-top:auto;font-weight:500}
+.card:hover .go{text-decoration:underline;text-decoration-color:var(--orange);text-underline-offset:4px}
+#ov{border:0;padding:0;background:var(--cream);color:var(--ink);width:min(860px,calc(100vw - 32px));max-height:min(86vh,900px);margin:auto;overflow:auto}
+#ov::backdrop{background:rgba(17,17,17,.55)}
+#ov[open]{animation:ov-in 280ms var(--ease)}
+@keyframes ov-in{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
+html:has(#ov[open]){overflow:hidden}
+.ov-x{position:sticky;top:0;float:right;z-index:2;appearance:none;border:0;background:var(--cream);font:inherit;font-weight:600;min-height:44px;padding:0 18px;cursor:pointer}
+.ov-x:hover{text-decoration:underline;text-decoration-color:var(--orange);text-underline-offset:4px}
+#ov-body{padding:clamp(24px,3.5vw,44px)}
+#ov-body .cat{color:var(--ink-70);margin-bottom:10px;padding-right:80px}
+#ov-body h2{font-size:clamp(30px,3.4vw,46px);font-weight:700;letter-spacing:-.035em;line-height:1.04;margin-bottom:24px}
+.ov-img{width:100%;max-width:640px;height:auto;margin-bottom:22px;display:block}
+/* about: portrait, experience list, compact facts */
+.ph.has-me .txt{grid-column:6/10}
+.me{grid-column:10/-1;align-self:end}
+.road{position:relative;list-style:none;padding:0;grid-column:1/5;grid-row:2;align-self:start;box-shadow:inset 1px 0 0 var(--line)}
+.stop{appearance:none;border:0;background:none;font:inherit;color:var(--ink-70);cursor:pointer;width:100%;height:60px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 0 0 18px;text-align:left;transition:color 200ms}
+.stop:hover,.stop[aria-pressed=true]{color:var(--ink)}
+.stop .n{font-size:18px;font-weight:500;letter-spacing:-.015em;line-height:1.15}
+.stop .d{font-size:12px;white-space:nowrap}
+.road-mark{position:absolute;left:0;top:0;width:3px;height:60px;background:var(--orange);transform:translate3d(0,calc(var(--i,0)*100%),0);transition:transform 420ms var(--ease);will-change:transform;pointer-events:none}
+.stop-panel{grid-column:5/-1;grid-row:1/3}
+.xp-pic{position:relative;aspect-ratio:2/1;background:var(--m-left);overflow:hidden;display:grid;place-items:center}
+.xp-pic img{width:100%;height:100%;object-fit:contain;display:block}
+.xp-pic b{font-size:clamp(96px,15vw,240px);font-weight:700;letter-spacing:-.07em;line-height:.8;color:var(--orange)}
+.xp-dots{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.xp-dots button{appearance:none;border:0;width:40px;height:40px;background:var(--cream);color:var(--ink);font:500 13px var(--mono);cursor:pointer}
+.xp-dots button[aria-pressed=true]{background:var(--ink);color:var(--cream)}
+.xp-copy{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(16px,2vw,28px);padding-top:22px;min-height:330px}
+.xp-sum{font-weight:500;line-height:1.4;margin-bottom:10px}
+.xp-list{list-style:none;padding:0;display:grid;gap:7px;font-size:16px;line-height:1.42;color:var(--ink-70)}
+.xp-list li{position:relative;padding-left:16px}
+.xp-list li::before{content:"";position:absolute;left:0;top:.7em;width:8px;height:1px;background:var(--orange)}
+.xp-copy .d{color:var(--ink-70);margin-bottom:6px}
+.xp-copy h3{font-size:clamp(24px,2.2vw,32px);letter-spacing:-.03em;line-height:1.1;margin-bottom:4px}
+.xp-copy .org{color:var(--ink-70);font-size:15px}
+.me img{width:100%;aspect-ratio:3/4;object-fit:cover;object-position:50% 25%;display:block}
+.quad{row-gap:clamp(36px,5vw,64px)}
+.quad>div{grid-column:span 6}
+.quad h2{font-size:clamp(26px,2.4vw,36px);font-weight:700;letter-spacing:-.035em;line-height:1.05;margin-bottom:18px}
+
+
+footer{background:var(--ink);color:var(--cream);padding:clamp(56px,7vw,104px) 0 24px;overflow:hidden}
+footer h2{grid-column:1/8;font-size:clamp(34px,4.6vw,68px);font-weight:700;letter-spacing:-.04em;line-height:1}
+footer .c{grid-column:9/-1;align-self:end;display:grid}
+footer .c a{display:inline-flex;align-items:center;min-height:44px;font-weight:600}
+footer .c span{color:rgba(243,238,227,.72)}
+footer :focus-visible{outline-color:var(--cream)}
+.small{grid-column:1/-1;margin-top:clamp(40px,6vw,88px);color:rgba(243,238,227,.72);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media (prefers-reduced-motion:reduce){
+  .ph .big,.ph .txt,#ov[open]{animation:none}
+  *,*::before,*::after{transition-duration:.01ms!important}
+}
+@media (max-width:1100px){.nav a span{display:none}}
+@media (max-width:1024px){
+  .hero{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  .copy{width:auto;padding:36px var(--m) 8px}
+  .stage{position:relative;inset:auto;aspect-ratio:1380/830;width:100%;overflow:visible}
+  .ph .big{grid-column:1/-1;margin-bottom:20px;font-size:clamp(120px,26vw,220px)}
+  .ph .txt{grid-column:1/-1}
+  .block>h2,.block>.body{grid-column:1/-1}
+  footer h2,footer .c{grid-column:1/-1}
+  footer .c{margin-top:24px}
+}
+@media (max-width:760px){
+  .top-in{flex-wrap:wrap;row-gap:0;padding-top:6px;padding-bottom:6px;min-height:0}
+  .top{position:static}
+  .nav{order:3;width:100%}
+  .nav ul{display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between;gap:0 12px}
+  .nav a{font-size:15px}
+  .cam .stations{display:none}
+  .lab .full{display:none}.lab .num{display:block;font-size:12px}
+  .index li a{grid-template-columns:44px 1fr 24px;row-gap:6px;padding:18px 0}
+  .index .n{grid-column:1;grid-row:1}.index .t2{grid-column:2;grid-row:1}.index .ar{grid-column:3;grid-row:1}
+  .index .d{grid-column:2/-1;grid-row:2;font-size:16px}
+  .row{display:block}
+  .row dt{margin-bottom:8px}
+  .flow{grid-template-columns:1fr 1fr;row-gap:20px}
+  .tl li{display:block}
+  .tl .when{display:block;margin-bottom:4px}
+  .pn .back{grid-column:1/-1}.pn .next{grid-column:1/-1;justify-self:start}
+}
+.body.cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:1024px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.ph.has-me .txt{grid-column:1/-1}.me{grid-column:1/-1;max-width:220px;margin-top:20px}.quad>div{grid-column:1/-1}.road,.stop-panel{grid-column:1/-1;grid-row:auto}.stop-panel{margin-top:24px}}
+@media (max-width:760px){
+  .cards,.body.cards{grid-template-columns:1fr}
+  .xp-copy{grid-template-columns:1fr;gap:10px;min-height:0}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in">
+  <a class="brand" href="#/" data-route="">Kevin Jeo</a>
+  <nav class="nav" aria-label="Main"><ul id="nav"></ul></nav>
+  <a class="mail" href="mailto:kevjeo@gmail.com?subject=Hello%20Kevin">Email Kevin</a>
+</div></header>
+
+<main id="main">
+  <div id="home">
+    <section class="hero" id="hero" aria-labelledby="name">
+      <div class="copy">
+        <h1 id="name" tabindex="-1">Kevin Jeo</h1>
+        <p class="statement" id="statement"></p>
+        <p class="intro" id="intro"></p>
+        <p class="mono hint"><span id="here">You are here: About Me</span><span>Pick a stop to travel there</span><span>Or scroll for the index ↓</span></p>
+      </div>
+      <div class="stage" id="stage"></div>
+    </section>
+    <section class="index grid" id="index" aria-labelledby="indexH">
+      <h2 id="indexH">Three stops on the road</h2>
+      <ol id="list"></ol>
+    </section>
+  </div>
+  <div id="page" hidden></div>
+</main>
+
+<footer><div class="grid">
+  <h2>Have an operation that could run better?</h2>
+  <div class="c">
+    <a href="mailto:kevjeo@gmail.com?subject=Hello%20Kevin">kevjeo@gmail.com</a>
+    <a href="https://www.linkedin.com/in/kevinjeo/">LinkedIn</a>
+    <a href="https://github.com/kepinpin-create">GitHub</a>
+  </div>
+  <p class="mono small"><span>© 2026 Kevin Jeo</span><span>Serpong, South Tangerang</span></p>
+</div></footer>
+<div class="veil" id="veil" aria-hidden="true"></div>
+<dialog id="ov" aria-labelledby="ov-t"><button type="button" class="ov-x" id="ov-x">Close ✕</button><div id="ov-body"></div></dialog>
+<noscript><p style="padding:24px">This atlas needs JavaScript. Reach Kevin at <a href="mailto:kevjeo@gmail.com">kevjeo@gmail.com</a>.</p></noscript>
+
+<script src="content.js"></script>
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const D=SITE.districts, HOME={route:''}, reduce=matchMedia('(prefers-reduced-motion: reduce)');
+const byId=id=>D.find(d=>d.id===id), byRoute=r=>r===''?HOME:D.find(d=>d.route===r);
+
+/* ---------- isometric geometry ---------- */
+const U=20, CX=.866*U, SY=.5*U, OX=690, OY=40;
+const P=(x,y,z=0)=>[OX+(x-y)*CX, OY+(x+y)*SY-z*U];
+const pts=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+const poly=(a,c)=>`<polygon class="${c}" points="${pts(a)}"/>`;
+const seg=(a,b,c='w')=>`<line class="${c}" x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}"/>`;
+const flat=(x0,y0,x1,y1,c,z=0)=>poly([P(x0,y0,z),P(x1,y0,z),P(x1,y1,z),P(x0,y1,z)],c);
+
+function box(x,y,z,w,d,h,{f=0,m=0}={}){
+  const t=z+h, X=x+w, Y=y+d;
+  let s=poly([P(x,Y,z),P(X,Y,z),P(X,Y,t),P(x,Y,t)],'l')+poly([P(X,y,z),P(X,Y,z),P(X,Y,t),P(X,y,t)],'r')+poly([P(x,y,t),P(X,y,t),P(X,Y,t),P(x,Y,t)],'t');
+  for(let k=1;k<f;k++){const q=z+h*k/f;s+=seg(P(x,Y,q),P(X,Y,q))+seg(P(X,y,q),P(X,Y,q));}
+  for(let k=1;k<m;k++){s+=seg(P(x+w*k/m,Y,z),P(x+w*k/m,Y,t));s+=seg(P(X,y+d*k/m,z),P(X,y+d*k/m,t));}
+  return s;
+}
+// north-light factory roof, teeth running along x
+function saw(x,y,z,n,t,d,r){
+  let s='';
+  for(let i=0;i<n;i++){
+    const a=x+i*t,b=a+t;
+    s+=poly([P(a,y,z),P(b,y,z+r),P(b,y+d,z+r),P(a,y+d,z)],'t');
+    s+=poly([P(a,y+d,z),P(b,y+d,z),P(b,y+d,z+r)],'l');
+    s+=poly([P(b,y,z),P(b,y+d,z),P(b,y+d,z+r),P(b,y,z+r)],'r');
+  }
+  return s;
+}
+function gable(x,y,z,w,d,r){
+  const X=x+w,Y=y+d,m=y+d/2,T=z+r;
+  return poly([P(x,y,z),P(X,y,z),P(X,m,T),P(x,m,T)],'t')+poly([P(x,Y,z),P(X,Y,z),P(X,m,T),P(x,m,T)],'l')+poly([P(X,y,z),P(X,Y,z),P(X,m,T)],'r');
+}
+function cyl(x,y,z,r,h){
+  const b=P(x,y,z),t=P(x,y,z+h),rx=r*U*1.22,ry=rx*.577,L=b[0]-rx,R=b[0]+rx,f=n=>n.toFixed(1);
+  return `<path class="l" d="M${f(L)} ${f(t[1])}L${f(L)} ${f(b[1])}A${f(rx)} ${f(ry)} 0 0 0 ${f(R)} ${f(b[1])}L${f(R)} ${f(t[1])}Z"/>`+
+    `<path class="r" style="stroke:none" d="M${f(b[0])} ${f(t[1]+ry)}L${f(b[0])} ${f(b[1]+ry)}A${f(rx)} ${f(ry)} 0 0 0 ${f(R)} ${f(b[1])}L${f(R)} ${f(t[1])}A${f(rx)} ${f(ry)} 0 0 1 ${f(b[0])} ${f(t[1]+ry)}Z"/>`+
+    `<ellipse class="t" cx="${f(t[0])}" cy="${f(t[1])}" rx="${f(rx)}" ry="${f(ry)}" stroke="#111" stroke-width=".7"/>`;
+}
+function dome(x,y,z,r){
+  const c=P(x,y,z),rx=r*U*1.22,ry=rx*.577,f=n=>n.toFixed(1);
+  return `<path class="t" d="M${f(c[0]-rx)} ${f(c[1])}A${f(rx)} ${f(rx*.92)} 0 0 1 ${f(c[0]+rx)} ${f(c[1])}A${f(rx)} ${f(ry)} 0 0 1 ${f(c[0]-rx)} ${f(c[1])}Z"/>`;
+}
+
+/* ---------- the town ---------- */
+const face=(fn,r,n=20)=>Array.from({length:n},(_,i)=>{const a=i/n*Math.PI*2;return fn(r*Math.cos(a),r*Math.sin(a));});
+const facingX=(X,y,z)=>(u,v)=>P(X,y+u,z+v);
+const facingY=(x,Y,z)=>(u,v)=>P(x+u,Y,z+v);
+const stroke=(c,...p)=>`<polyline class="${c}" points="${pts(p)}"/>`;
+const doorX=(X,y,w,h)=>poly([P(X,y,0),P(X,y+w,0),P(X,y+w,h),P(X,y,h)],'dk');
+const CELLS={
+  industrial:{c:36,h:8,draw(){ // factory: chimneys, silos, north-light roof
+    return cyl(3.6,33.6,0,.55,7)+cyl(3.6,35.4,0,.45,5.4)+cyl(3.7,37.8,0,.8,2.5)
+      +box(5,33.6,0,5.6,4.8,1.8,{m:9})+saw(5,33.6,1.8,4,1.4,4.8,.9)
+      +doorX(10.6,34.6,1.2,1.3)+doorX(10.6,36.8,1.2,1.3);
+  }},
+  logistics:{c:28,h:4,draw(){ // warehouse: dock doors, shipping containers, gantry crane
+    let s=box(3.2,25.4,0,3.4,5.2,2.4,{m:6})+doorX(6.6,25.9,1,1.5)+doorX(6.6,27.5,1,1.5)+doorX(6.6,29.1,1,1.5);
+    const leg=(x,y)=>box(x,y,0,.22,.22,3);
+    s+=leg(7.4,26.6)+leg(7.4,30.2);
+    [[8,27,1],[8,28.3,2],[8,29.6,1],[9.9,27,2],[9.9,28.3,1],[9.9,29.6,2]].forEach(([x,y,n])=>{for(let k=0;k<n;k++)s+=box(x,y,k*.75,1.7,1,.75,{m:5});});
+    s+=leg(11.7,26.6)+leg(11.7,30.2)+box(7.4,26.6,3,4.5,.22,.22)+box(7.4,30.2,3,4.5,.22,.22)+box(9.2,26.6,3.22,.5,3.8,.2)+box(9.25,28.1,2.1,.4,.6,1.12);
+    return s;
+  }},
+  about:{c:4,h:13,draw(){ // headquarters: tower on a podium, flag
+    return box(3,1.2,0,7.6,5.4,1,{m:12})
+      +box(3.4,1.6,1,4.2,4.2,8.6,{f:13,m:6})+box(4.2,2.4,9.6,2.6,2.6,.5,{m:4})
+      +box(5.4,3.6,10.1,.12,.12,2)+poly([P(5.46,3.66,12.1),P(6.9,3.66,11.85),P(5.46,3.66,11.5)],'fl');
+  }},
+};
+// each drawing was made in its own coordinates; `at` is the corner of its town block
+const BLOCK=10, GX=[2,14,26], GY=[2,14,26];
+const place=(id,i,j,c)=>{const C=CELLS[id];C.c=c;C.x=[GX[i],GX[i]+BLOCK];C.y=[GY[j],GY[j]+BLOCK];C.dx=GX[i]-2.8;C.dy=GY[j]+5-c;C.key=GX[i]+GY[j];};
+// the stops zigzag across town, always moving right on screen; each sits beside the one before it
+place('about',0,2,4);place('industrial',0,1,36);place('logistics',1,1,28);
+
+// repeatable randomness, so the same trees grow in the same places on every load
+const rnd=(x,y,k)=>{const v=Math.sin(x*12.9898+y*78.233+k*37.719)*43758.5453;return v-Math.floor(v);};
+function blob(cx,cy,r,seed){
+  // one lumpy shape: outline pass first, then a fill pass that hides the inner lines
+  const parts=[[cx,cy,r]];
+  for(let i=0;i<4;i++){const t=(i+rnd(seed,i,3)*.6)/4*Math.PI*2,d=r*(.55+rnd(seed,i,4)*.25),q=r*(.55+rnd(seed,i,5)*.3);parts.push([cx+Math.cos(t)*d,cy+Math.sin(t)*d*.82,q]);}
+  const c=(cl,[a,b,n])=>`<circle class="${cl}" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="${n.toFixed(1)}"/>`;
+  return parts.map(p=>c('lfo',p)).join('')+parts.map(p=>c('lf',p)).join('');
+}
+function tree(x,y){
+  const [a,b]=P(x,y),s=.82+rnd(x,y,1)*.45,lean=(rnd(x,y,2)-.5)*5,f=n=>n.toFixed(1),seed=x*3.1+y;
+  const tipX=a+lean,top=b-14*s,trunk=`<path class="tk" d="M${f(a)} ${f(b)}Q${f(a+lean*.2)} ${f(b-7*s)} ${f(tipX)} ${f(top)}"/>`;
+  if(rnd(x,y,0)<.34){
+    let g=trunk;
+    for(let t=0;t<3;t++){
+      const yb=b-(9+t*9.5)*s,yt=yb-(19-t*2.5)*s,half=(11.5-t*2.4)*s,mx=a+lean*(.55+t*.28),L=mx-half*(.9+rnd(x,y,8+t)*.2),R=mx+half*(.9+rnd(x,y,11+t)*.2);
+      g+=`<path class="pn" d="M${f(L)} ${f(yb)}Q${f(mx)} ${f(yb+3.2*s)} ${f(R)} ${f(yb)}L${f(mx+lean*.1)} ${f(yt)}Z"/>`;
+      g+=`<path class="pn2" d="M${f(L+2*s)} ${f(yb-.5)}L${f(mx-.5)} ${f(yt+3)}L${f(mx-half*.25)} ${f(yb+.8)}Z"/>`;
+    }
+    return g;
+  }
+  const cx=tipX,cy=b-24*s,r=10.5*s;
+  let g=trunk+blob(cx,cy,r,seed);
+  g+=`<circle class="lf3" cx="${f(cx+3.5*s)}" cy="${f(cy+4.5*s)}" r="${f(5.5*s)}"/><circle class="lf2" cx="${f(cx-4*s)}" cy="${f(cy-4*s)}" r="${f(4.6*s)}"/><circle class="lf2" cx="${f(cx+2*s)}" cy="${f(cy-6.5*s)}" r="${f(2.6*s)}"/>`;
+  if(rnd(x,y,7)<.32)g+=blob(a+(rnd(x,y,9)<.5?-13:13)*s,b-3,4.2*s,seed+5);
+  return g;
+}
+// nudged off a perfect grid so the planting doesn't look ruled
+const trees=list=>list.map(([x,y])=>[x+(rnd(x,y,20)-.5)*.7,y+(rnd(x,y,21)-.5)*.7]).sort((p,q)=>p[0]+p[1]-q[0]-q[1]).map(([x,y])=>tree(x,y)).join('');
+function house(x,y){return box(x,y,0,2,1.6,.7,{m:3})+gable(x-.1,y-.1,.7,2.2,1.8,.6).replace(/class="t"/g,'class="rt"').replace(/class="l"/g,'class="rl"');}
+function street(x0,y0){
+  const items=[];
+  [1.2,5,8.6].forEach(v=>[1,4.2,7.4].forEach(u=>items.push([x0+u+y0+v-.8,house(x0+u,y0+v-.8)])));
+  [[3.65,3.2],[6.85,3.2],[3.65,7],[6.85,7]].forEach(([u,v])=>items.push([x0+u+y0+v,tree(x0+u+(rnd(u,v+x0,30)-.5)*.3,y0+v+(rnd(u,v+y0,31)-.5)*.3)]));
+  return items.sort((a,b)=>a[0]-b[0]).map(i=>i[1]).join('');
+}
+// trees on open ground only: behind each building, or beside it where they can't hide a stop
+const GROVES={
+  about:{back:[[3.5,27],[6.5,27],[9.5,27]],front:[[11,29],[11,32],[11,35]]},
+  industrial:{back:[[4,15],[7,15],[10,15]],front:[[11,17],[11,20],[11,23],[2.8,23]]},
+  logistics:{back:[],front:[[14.8,23],[23.2,23]]},
+};
+const edge=[];for(let v=3;v<37;v+=4.2){edge.push([1,v],[v,1]);}
+const front=[];for(let v=3;v<37;v+=4.2){if(Math.abs(v-13)>2.5)front.push([v,37]);if(Math.abs(v-25)>2.5)front.push([37,v]);}
+const WHOLE={x:[0,38],y:[0,38],h:2.4};
+const QUARTERS=[[0,0],[1,0],[2,0],[2,1],[1,2],[2,2]].map(([i,j])=>({x:[GX[i],GX[i]+BLOCK],y:[GY[j],GY[j]+BLOCK],h:1.6,key:GX[i]+GY[j]+.1,draw:()=>street(GX[i],GY[j])}));
+
+/* ---------- the road: one winding route from 01 to 03 ---------- */
+const STOPS={about:[13,31],industrial:[13,23],logistics:[19,13]};
+const PLATFORMS={about:[11.95,30,12.55,32],industrial:[11.95,22,12.55,24],logistics:[18,13.45,20,14]};
+const NODES={...STOPS,start:[13,38],t1:[13,13],t2:[25,13],end:[25,0]};
+const SEQ=['start','about','industrial','t1','logistics','t2','end'];
+const NAMES={about:[7.5,35.2],industrial:[5.4,23.2],logistics:[19.5,23.2]};
+const gap=(a,b)=>Math.abs(NODES[a][0]-NODES[b][0])+Math.abs(NODES[a][1]-NODES[b][1]);
+function pathBetween(a,b){const i=SEQ.indexOf(a),j=SEQ.indexOf(b);return i<=j?SEQ.slice(i,j+1):SEQ.slice(j,i+1).reverse();}
+function track(a,b){
+  const [x0,y0]=NODES[a],[x1,y1]=NODES[b],along=y0===y1,lo=along?Math.min(x0,x1):Math.min(y0,y1),hi=along?Math.max(x0,x1):Math.max(y0,y1);
+  return (along?flat(lo,y0-.6,hi,y0+.6,'bed'):flat(x0-.6,lo,x0+.6,hi,'bed'))+(along?seg(P(lo,y0),P(hi,y0),'dash'):seg(P(x0,lo),P(x0,hi),'dash'));
+}
+// a small arrowhead on each stretch of road, pointing toward 03
+function chevron(a,b){
+  const [x0,y0]=NODES[a],[x1,y1]=NODES[b],L=Math.abs(x1-x0)+Math.abs(y1-y0);
+  if(L<4)return '';
+  const ux=(x1-x0)/L,uy=(y1-y0)/L,mx=(x0+x1)/2,my=(y0+y1)/2,tip=P(mx+ux*.38,my+uy*.38);
+  return stroke('chev',P(mx-ux*.2-uy*.3,my-uy*.2+ux*.3),tip,P(mx-ux*.2+uy*.3,my-uy*.2-ux*.3));
+}
+
+const VW=1380, VH=830, pc=(n,d)=>(n/d*100).toFixed(3)+'%';
+// each piece gets its own small frame, so hover and zoom only move GPU layers instead of repainting the town
+function frameOf(c){
+  const pad=20,x0=P(c.x[0],c.y[1])[0]-pad,x1=P(c.x[1],c.y[0])[0]+pad,y0=P(c.x[0],c.y[0],c.h)[1]-pad,y1=P(c.x[1],c.y[1])[1]+pad;
+  return {vb:`${x0.toFixed(1)} ${y0.toFixed(1)} ${(x1-x0).toFixed(1)} ${(y1-y0).toFixed(1)}`,style:`left:${pc(x0,VW)};top:${pc(y0,VH)};width:${pc(x1-x0,VW)};height:${pc(y1-y0,VH)}`};
+}
+function carSprite(dir,s){
+  const W=.4, along=dir==='x';
+  const part=(a0,a1,c0,c1,z,h)=>{const lo=Math.min(a0*s,a1*s),len=Math.abs(a1-a0);return along?box(lo,c0,z,len,c1-c0,h):box(c0,lo,z,c1-c0,len,h);};
+  const side=(a,z,c=W)=>along?P(a*s,c,z):P(c,a*s,z);          // the long side facing the viewer
+  const wheel=a=>poly(Array.from({length:12},(_,i)=>{const t=i/12*Math.PI*2;return side(a+.17*Math.cos(t),.17+.17*Math.sin(t));}),'wh');
+  const end=s>0?.3:.62, endP=(c,z)=>along?P(end,c,z):P(c,end,z);  // the cabin end facing the viewer
+  let g=part(-1,1,-W,W,.17,.33)+wheel(-.58)+wheel(.58)+part(-.62,.3,-W+.06,W-.06,.5,.3);
+  g+=poly([side(-.54,.57,W-.06),side(.22,.57,W-.06),side(.22,.74,W-.06),side(-.54,.74,W-.06)],'dk');
+  g+=poly([endP(-W+.14,.57),endP(W-.14,.57),endP(W-.14,.74),endP(-W+.14,.74)],'dk');
+  if(s>0)[-.24,.24].forEach(c=>{const q=(u,v)=>along?P(1,c+u,v):P(c+u,1,v);g+=poly([q(-.08,.34),q(.08,.34),q(.08,.44),q(-.08,.44)],'hl');});
+  return g;
+}
+function buildWorld(){
+  let g=box(0,0,-.8,38,38,.8)+flat(0,0,38,38,'gd');
+  [[12,0,14,38],[24,0,26,38],[0,12,38,14],[0,24,38,26]].forEach(([a,b,c,d])=>g+=flat(a,b,c,d,'rd'));
+  GX.forEach(x=>GY.forEach(y=>g+=flat(x,y,x+BLOCK,y+BLOCK,'plot')));
+  ['t1','t2'].forEach(n=>{const [x,y]=NODES[n];g+=flat(x-.6,y-.6,x+.6,y+.6,'bed');});
+  SEQ.slice(1).forEach((n,i)=>g+=track(SEQ[i],n));
+  SEQ.slice(1).forEach((n,i)=>g+=chevron(SEQ[i],n));
+  Object.values(PLATFORMS).forEach(([a,b,c,d])=>g+=flat(a,b,c,d,'link'));
+  Object.values(STOPS).forEach(([x,y])=>{const p=P(x,y);g+=`<ellipse class="st" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" rx="10" ry="5.8"/>`;});
+
+  const o0=P(0,0);
+  const shift=c=>{const p=P(c.dx,c.dy);return `translate(${(p[0]-o0[0]).toFixed(1)} ${(p[1]-o0[1]).toFixed(1)})`;};
+  const groves=Object.entries(GROVES).flatMap(([id,g])=>{const c=CELLS[id],box2={x:c.x,y:c.y,h:2.4};return [{c:{...box2,draw:()=>trees(g.back)},key:c.key-.05},{c:{...box2,draw:()=>trees(g.front)},key:c.key+.05}];});
+  const order=[...Object.entries(CELLS).map(([id,c])=>({id,c,key:c.key})),...QUARTERS.map(c=>({c,key:c.key})),...groves,{c:{...WHOLE,draw:()=>trees(edge)},key:-1},{c:{...WHOLE,draw:()=>trees(front)},key:999}].sort((a,b)=>a.key-b.key);
+  const art=order.map(({id,c})=>{
+    const f=frameOf(c);
+    if(!id)return `<svg class="ctx" style="${f.style}" viewBox="${f.vb}" aria-hidden="true">${c.draw()}</svg>`;
+    const body=`<g transform="${shift(c)}">${c.draw()}</g>`;
+    return `<div class="bp" id="p-${id}" style="${f.style}"><svg class="art" viewBox="${f.vb}" aria-hidden="true">${body}</svg><svg class="tint" viewBox="${f.vb}" aria-hidden="true">${body}</svg></div>`;
+  }).join('');
+  const labels=Object.entries(NAMES).map(([id,s])=>{
+    const d=byId(id),[sx,sy]=P(...s);
+    return `<div class="lab" data-lab="${id}" style="left:${pc(sx,VW)};top:${pc(sy,VH)}"><span class="full">${d.no} ${d.name}</span><span class="num">${d.no}</span></div>`;
+  }).join('');
+  const hits=order.filter(o=>o.id).map(({id,c})=>{
+    const d=byId(id),[x0,x1]=c.x,[y0,y1]=c.y,hull=[P(x0,y1),P(x0,y1,c.h),P(x0,y0,c.h),P(x1,y0,c.h),P(x1,y0),P(x1,y1)];
+    return `<a class="bld" id="b-${id}" data-id="${id}" href="#/${d.route}" aria-label="${d.no} ${d.name}: ${d.blurb}">${poly(hull,'hit')}</a>`;
+  }).join('');
+  // numbers stand on posts in their own top layer: no building or car can cover them
+  const signs=Object.entries(STOPS).map(([id,[x,y]])=>{const p=P(x,y),top=p[1]-34;return `<line class="post" x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${p[0].toFixed(1)}" y2="${top.toFixed(1)}"/><circle class="sb" cx="${p[0].toFixed(1)}" cy="${top.toFixed(1)}" r="15"/><text class="stn" x="${p[0].toFixed(1)}" y="${(top+5).toFixed(1)}" text-anchor="middle">${byId(id).no}</text>`;}).join('');
+  const f=frameOf({x:[-1.6,1.6],y:[-1.6,1.6],h:1.2});
+  const cars=[['px','x',1],['nx','x',-1],['py','y',1],['ny','y',-1]].map(([h,d,sign])=>`<svg class="car" data-h="${h}" style="${f.style}" viewBox="${f.vb}" aria-hidden="true">${carSprite(d,sign)}</svg>`).join('');
+  $('#stage').innerHTML=`<div class="cam" id="cam"><svg class="ground" viewBox="0 0 ${VW} ${VH}" aria-hidden="true">${g}</svg><svg class="route" id="route" viewBox="0 0 ${VW} ${VH}" aria-hidden="true"><path id="routePath"/></svg>${cars}${art}<svg class="stations" viewBox="0 0 ${VW} ${VH}" aria-hidden="true">${signs}</svg><svg class="hits" viewBox="0 0 ${VW} ${VH}" role="group" aria-label="Town map: one winding road from stop 01 to stop 03">${hits}</svg>${labels}</div>`;
+}
+
+/* ---------- the car: drives the road on GPU transforms, stays where you last went ---------- */
+let tram='about', heading='ny';
+const headingOf=(a,b)=>{const dx=NODES[b][0]-NODES[a][0],dy=NODES[b][1]-NODES[a][1];return dx?(dx>0?'px':'nx'):(dy>0?'py':'ny');};
+const faceCar=h=>{heading=h;$$('.car').forEach(c=>c.style.opacity=c.dataset.h===h?1:0);};
+const scale=()=>$('#cam').offsetWidth/VW;
+function screenAt([x,y]){const p=P(x,y),o=P(0,0),k=scale();return [(p[0]-o[0])*k,(p[1]-o[1])*k];}
+const tf=([x,y])=>`translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+function placeTram(){
+  if($('#home').hidden)return;
+  $$('.car').forEach(c=>c.style.transform=tf(screenAt(STOPS[tram])));
+  faceCar(heading);
+  $$('.lab').forEach(l=>l.classList.toggle('here',l.dataset.lab===tram));
+  $('#here').textContent=`You are here: ${byId(tram).name}`;
+}
+function lightRoute(to){
+  if(to===tram){$('#route').classList.remove('on');return;}
+  $('#routePath').setAttribute('d','M'+pathBetween(tram,to).map(n=>P(...NODES[n]).map(v=>v.toFixed(1)).join(' ')).join('L'));
+  $('#route').classList.add('on');
+}
+// rides from the current stop to `to`, returning how long the trip takes
+function ride(to){
+  if(to===tram||reduce.matches){tram=to;return {ms:0,done:Promise.resolve()};}
+  const stops=pathBetween(tram,to),pts=stops.map(n=>screenAt(NODES[n]));
+  let run=0;const cum=stops.map((n,i)=>i?run+=gap(stops[i-1],n):0),total=cum[cum.length-1];
+  const ms=Math.max(900,Math.min(1600,total*42));
+  const legs=stops.slice(1).map((n,i)=>headingOf(stops[i],n));
+  // duplicate offsets make the car turn exactly at each bend
+  const anims=$$('.car').map(el=>{
+    const frames=legs.flatMap((h,i)=>{const opacity=el.dataset.h===h?1:0;return [{transform:tf(pts[i]),opacity,offset:cum[i]/total},{transform:tf(pts[i+1]),opacity,offset:cum[i+1]/total}];});
+    return el.animate(frames,{duration:ms,easing:'cubic-bezier(.45,0,.2,1)',fill:'both'});
+  });
+  const last=pts[pts.length-1],arrive=legs[legs.length-1];
+  const done=Promise.race([Promise.all(anims.map(a=>a.finished)),wait(ms+400)]).then(()=>{
+    $$('.car').forEach(c=>c.style.transform=tf(last));faceCar(arrive);anims.forEach(a=>a.cancel());
+  });
+  tram=to;return {ms,done};
+}
+
+/* ---------- camera ---------- */
+const CAM_MS=900, VEIL_MS=200;
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const painted=()=>Promise.race([new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))),wait(120)]);
+const veil=on=>$('#veil').classList.toggle('on',on);
+function camera(id){
+  const s=$('#stage').getBoundingClientRect(),V=$('#cam').getBoundingClientRect(),h=$(`#b-${id} .hit`).getBoundingClientRect(),k=innerWidth<760?2.1:2.6;
+  const tx=s.left+s.width/2-V.left-(h.left+h.width/2-V.left)*k, ty=s.top+s.height/2-V.top-(h.top+h.height*.62-V.top)*k;
+  return `translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0) scale(${k})`;
+}
+function camSet(transform,ms,ease){const c=$('#cam');c.style.transition=ms?`transform ${ms}ms ${ease}`:'none';c.style.transform=transform;}
+async function zoomInto(id,swap){
+  const c=$('#cam'),p=$(`#p-${id}`),hero=$('#hero');
+  lightRoute(id);p.classList.add('sel');hero.classList.add('zoom');c.style.willChange='transform';
+  const trip=ride(id),ms=trip.ms||900;
+  await wait(120); // the car pulls away first, then the camera follows it in
+  camSet(camera(id),ms+80,'var(--cam)');
+  await wait(ms-VEIL_MS);veil(true);await wait(VEIL_MS+30);await trip.done;
+  swap();
+  $$('.hot').forEach(e=>e.classList.remove('hot'));
+  $('#route').classList.remove('on');
+  p.classList.remove('sel');hero.classList.remove('zoom');camSet('none',0);c.style.willChange='';
+  await painted();veil(false);
+}
+async function zoomOut(id,swap){
+  veil(true);await wait(VEIL_MS);swap();
+  const c=$('#cam'),hero=$('#hero');
+  camSet('none',0);c.style.willChange='transform';camSet(camera(id),0);hero.classList.add('zoom');
+  await painted();veil(false);await wait(60);
+  camSet('none',Math.round(CAM_MS*.85),'var(--ease)');hero.classList.remove('zoom');
+  await wait(CAM_MS);c.style.willChange='';c.style.transition='none';
+}
+
+/* ---------- routing: hash URLs, so direct links and back/forward work ---------- */
+let cur=null,busy=false;
+const parse=()=>{const r=location.hash.replace(/^#\/?/,'');return byRoute(r)&&r!=='' ? r : '';};
+function show(route){
+  cur=route;
+  if($('#ov').open)$('#ov').close();
+  $$('#nav a').forEach(a=>a.getAttribute('data-route')===route?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
+  const d=byRoute(route);
+  document.title=route?`${d.name} — Kevin Jeo`:'Kevin Jeo — World Map';
+  if(!route){
+    $('#page').hidden=true;$('#page').innerHTML='';$('#home').hidden=false;
+    placeTram();
+    scrollTo(0,0);$('#name').focus({preventScroll:true});
+    return;
+  }
+  tram=d.id;$('#home').hidden=true;$('#page').hidden=false;$('#page').innerHTML=pageHTML(d);
+  if($('#road'))setStop(SITE.about.journey.length-1);
+  scrollTo(0,0);$('#page h1').focus({preventScroll:true});
+}
+async function transit(route,push){
+  if(busy||route===cur)return;
+  const swap=()=>{if(push){try{history.pushState(null,'','#/'+route);}catch(e){}}show(route);};
+  if(reduce.matches){swap();return;}
+  busy=true;
+  const from=cur?byRoute(cur).id:'';
+  if(route&&cur===''&&push&&scrollY<innerHeight*.6)await zoomInto(byRoute(route).id,swap);
+  else if(!route&&from)await zoomOut(from,swap);
+  else{veil(true);await wait(VEIL_MS);swap();await painted();veil(false);}
+  busy=false;
+  if(parse()!==cur)transit(parse(),false); // a back press landed mid-transition
+}
+function go(route){
+  if(busy)return;
+  if(route===cur){scrollTo({top:0,behavior:reduce.matches?'auto':'smooth'});return;}
+  transit(route,true);
+}
+function pick(id){if(!busy)go(byId(id).route);}
+document.addEventListener('click',e=>{
+  if(e.metaKey||e.ctrlKey||e.shiftKey)return;
+  const lab=e.target.closest('.lab');if(lab){pick(lab.dataset.lab);return;}
+  const a=e.target.closest('a');if(!a)return;
+  if(a.classList.contains('bld')){e.preventDefault();pick(a.dataset.id);return;}
+  const r=a.dataset.route;
+  if(r===undefined)return;
+  e.preventDefault();go(r);
+});
+document.addEventListener('click',e=>{
+  const card=e.target.closest('[data-card]');if(card){openCard(+card.dataset.card);return;}
+  const stop=e.target.closest('[data-stop]');if(stop){setStop(+stop.dataset.stop);return;}
+  const dot=e.target.closest('[data-pic]');if(dot){$('#stop img').src=dot.dataset.pic;$$('[data-pic]').forEach(b=>b.setAttribute('aria-pressed',b===dot));return;}
+  const ov=$('#ov');if(e.target.id==='ov-x'||e.target===ov)ov.close();
+});
+addEventListener('popstate',()=>transit(parse(),false));
+addEventListener('hashchange',()=>transit(parse(),false));
+
+/* ---------- editorial templates ---------- */
+const list=a=>`<ul>${a.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+const paras=a=>a.map(x=>`<p>${x}</p>`).join('');
+const row=(k,v)=>v?`<div class="row"><dt class="mono">${k}</dt><dd>${v}</dd></div>`:'';
+const VISUALS={
+  cost:()=>`<div class="bars" role="img" aria-label="Operational cost: current system 100%, proposed system 50%"><div class="bar was"><span>Current</span><i style="--v:1"></i><b>100%</b></div><div class="bar"><span>Proposed</span><i style="--v:.5"></i><b>50%</b></div></div>`,
+};
+/* ---------- cards open an overview, so pages stay short ---------- */
+const OV=[];
+function card(p,no,i){
+  const k=OV.push({p,no,i})-1;
+  const tile=p.img?`<img referrerpolicy="no-referrer" src="${p.img}" alt="" onerror="this.remove()">`:`<b>${p.tile.stat}</b><span>${p.tile.label}</span>`;
+  return `<button type="button" class="card" data-card="${k}"><span class="tile${p.img?' pic':''}">${tile}</span><span class="mono cat">${p.tag}</span><span class="t">${p.title}</span><span class="hk">${p.hook}</span><span class="mono go">View overview →</span></button>`;
+}
+function openCard(k){
+  const {p,no,i}=OV[k];
+  const stats=p.results.length?`<div class="stats">${p.results.map(([a,b])=>`<div><b>${a}</b><span>${b}</span></div>`).join('')}</div>`:'';
+  const outcome=(stats||p.finding)?stats+(p.finding?`<p>${p.finding}</p>`:''):'';
+  const doc=p.links&&`<div class="links">${p.links.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${t} ↗</a>`).join('')}</div>`;
+  const chips=a=>a&&a.length&&`<div class="tags">${a.map(t=>`<span>${t}</span>`).join('')}</div>`;
+  $('#ov-body').innerHTML=`<p class="mono cat">${no}.${i+1} · ${p.category}${p.date?' · '+p.date:''}</p><h2 id="ov-t">${p.title}</h2>${p.img?`<img class="ov-img" referrerpolicy="no-referrer" src="${p.img}" alt="${p.imgAlt}">`:''}<dl>${row('The question',p.question)}${row(p.solo?'What I did':'What we did',paras(p.work))}${row('Modules',chips(p.modules))}${row('What came of it',outcome)}${row('A closer look',p.visual&&VISUALS[p.visual]())}${row('See the work',doc)}${row('Tools',chips(p.tools))}</dl>`;
+  const ov=$('#ov');ov.showModal();ov.scrollTop=0;
+}
+function blockH(t,b){return `<section class="block grid"><h2>${t}</h2><div class="body">${b}</div></section>`;}
+function experience(){
+  const h=SITE.hashmicro,no=byRoute('experience').no;
+  const flow=`<ol class="flow">${h.flow.map(([a,b],i)=>`<li><span class="mono">Step ${i+1}</span><strong>${a}</strong><p>${b}</p></li>`).join('')}</ol>`;
+  const cards=h.clients.map((c,i)=>card({title:c.label,tag:'ERP implementation',category:'ERP implementation',hook:c.hook,tile:{stat:c.modules.length,label:'modules'},question:'',work:[c.work],results:[],finding:'',tools:[],modules:c.modules,solo:true},no,i)).join('');
+  return roadmap()+blockH('How I work with a client',flow)+`<section class="block grid"><h2>Four businesses, four setups</h2><div class="body cards">${cards}</div></section>`;
+}
+/* experience: roles newest first beside one steady panel, so nothing jumps on click */
+function roadmap(){
+  const J=SITE.about.journey;
+  J.flatMap(s=>s.pics||[]).forEach(u=>{new Image().src=u;}); // ready before the first click
+  const rows=J.map((s,i)=>`<li><button type="button" class="stop" data-stop="${i}" aria-pressed="false"><span class="n">${s.title}</span><span class="mono d">${s.when}</span></button></li>`).reverse().join('');
+  return `<section class="block grid"><h2>Experience</h2><ol class="road" id="road">${rows}<li class="road-mark" aria-hidden="true"></li></ol><div class="stop-panel" id="stop" aria-live="polite"></div></section>`;
+}
+function setStop(i){
+  const J=SITE.about.journey,s=J[i],road=$('#road');
+  road.style.setProperty('--i',J.length-1-i);
+  $$('.stop',road).forEach(b=>b.setAttribute('aria-pressed',+b.dataset.stop===i));
+  const dots=s.pics&&s.pics.length>1?`<div class="xp-dots">${s.pics.map((u,n)=>`<button type="button" data-pic="${u}" aria-label="Photo ${n+1}" aria-pressed="${n===0}">${n+1}</button>`).join('')}</div>`:'';
+  const pic=s.pics?`<img src="${s.pics[0]}" alt="${s.alt}">${dots}`:`<b aria-hidden="true">${s.when.slice(-4)}</b>`;
+  const P_=$('#stop');
+  P_.innerHTML=`<div class="xp-pic">${pic}</div><div class="xp-copy"><div><p class="mono d">${s.period}</p><h3>${s.title}</h3><p class="org">${s.org}</p></div><div><p class="xp-sum">${s.text}</p><ul class="xp-list">${s.points.map(t=>`<li>${t}</li>`).join('')}</ul></div></div>`;
+  if(!reduce.matches)P_.animate([{opacity:0},{opacity:1}],{duration:240,easing:'ease-out'});
+}
+// a tool shows its logo when the entry is an image path, otherwise its initials
+const tools=l=>`<ul class="tools">${l.map(([n,m])=>`<li>${m.includes(".")?`<img src="${m}" alt="">`:`<i aria-hidden="true">${m}</i>`}<span>${n}</span></li>`).join("")}</ul>`;
+function about(){
+  const a=SITE.about,p=SITE.person;
+  const tl=rows=>`<ul class="tl">${rows.map(([t,o,w])=>`<li><span class="mono when">${w}</span><div class="what"><h3>${t}</h3><p class="org">${o}</p></div></li>`).join('')}</ul>`;
+  const chips=l=>`<div class="chips">${l.map(x=>`<span>${x}</span>`).join('')}</div>`;
+  return `<section class="block grid quad"><div><h2>What I'm good at</h2>${chips(a.competencies)}</div><div><h2>Tools I use</h2>${tools(a.tools)}</div><div><h2>Certifications</h2>${tl(a.certifications)}</div><div><h2>Languages</h2>${tl(a.languages.map(([t,o])=>[t,o,'']))}</div></section>`+
+    blockH('Say hello',`<div class="links"><a href="${p.cv}" target="_blank" rel="noopener">View my CV</a><a href="mailto:${p.email}">${p.email}</a><a href="tel:${p.phone.replace(/ /g,'')}">${p.phone}</a><a href="${p.linkedin}" target="_blank" rel="noopener">LinkedIn</a><a href="${p.github}" target="_blank" rel="noopener">GitHub</a></div>`);
+}
+function pageHTML(d){
+  OV.length=0;
+  const items=SITE.projects[d.route]||[];
+  const projects=items.length?`<section class="cards-wrap grid"><div class="cards">${items.map((p,i)=>card(p,d.no,i)).join('')}</div></section>`:'';
+  const extra={experience,about}[d.route];
+  const seq=D.filter(x=>x.route),i=seq.indexOf(d),nx=seq[(i+1)%seq.length];
+  const rt=`<a class="back" href="#/" data-route="">← Back to the map</a>`;
+  const first=d.route==='experience'||d.route==='about';
+  const me=d.route==='about'?`<figure class="me"><img src="${SITE.about.portrait}" alt="Portrait of Kevin Jeo" onerror="this.parentElement.remove()"></figure>`:'';
+  return `<div><header class="ph grid${me?' has-me':''}"><div class="big" aria-hidden="true">${d.no}</div><div class="txt"><p class="mono meta">Stop ${d.no} of ${String(D.length).padStart(2,"0")}</p><h1 tabindex="-1">${d.name}</h1><p class="lead">${d.lead}</p>${rt}</div>${me}</header>
+  ${first&&extra?extra():''}${projects}${!first&&extra?extra():''}
+  <nav class="pn grid" aria-label="Next destination">${rt}<a class="back next" href="#/${nx.route}" data-route="${nx.route}">Next stop: ${nx.name} →</a></nav></div>`;
+}
+
+/* ---------- start ---------- */
+$('#nav').innerHTML='<li><a href="#/" data-route="">Map</a></li>'+D.map(d=>`<li><a href="#/${d.route}" data-route="${d.route}"><span>${d.no}</span>${d.short}</a></li>`).join('');
+$('#statement').innerHTML=SITE.person.statement.map(s=>`<span>${s}</span>`).join('');
+$('#intro').textContent=SITE.person.intro;
+$('#list').innerHTML=D.map(d=>`<li><a href="#/${d.route}" data-route="${d.route}"><span class="n">${d.no}</span><span class="t2">${d.name}</span><span class="d">${d.blurb}</span><span class="ar" aria-hidden="true">→</span></a></li>`).join('');
+buildWorld();
+Object.keys(STOPS).forEach(id=>{
+  const b=$(`#b-${id}`),lab=$(`[data-lab="${id}"]`),p=$(`#p-${id}`);
+  const on=v=>{if(busy)return;p.classList.toggle('hot',v);lab.classList.toggle('hot',v);if(v)lightRoute(id);else $('#route').classList.remove('on');};
+  [b,lab].forEach(el=>{el.addEventListener('mouseenter',()=>on(true));el.addEventListener('mouseleave',()=>on(false));});
+  b.addEventListener('focus',()=>on(true));b.addEventListener('blur',()=>on(false));
+});
+addEventListener('resize',placeTram);
+show(parse());
+
+// self-checks: projection, data integrity, every route resolves
+console.assert(pathBetween('about','logistics').join()==='about,industrial,t1,logistics','the road runs 01 to 03 in order');
+console.assert(D.map(d=>STOPS[d.id]).every(Boolean)&&SEQ.every(n=>NODES[n]),'every stop and bend is on the line');
+console.assert(D.every((d,i)=>!i||P(...STOPS[d.id])[0]>P(...STOPS[D[i-1].id])[0]),'each stop sits further right on screen');
+console.assert(Object.keys(STOPS).length===D.length&&D.every(d=>STOPS[d.id]),'every district has a station');
+console.assert(P(0,0,0)[0]===OX&&P(1,1,0)[0]===OX,'projection: equal x and y stay on the centre axis');
+SITE.hashmicro.clients.forEach(c=>c.modules.forEach(m=>console.assert(SITE.hashmicro.modules.includes(m),'unknown module '+m)));
+D.forEach(d=>console.assert(byRoute(d.route)===d,'route '+d.route));
+Object.keys(SITE.projects).forEach(k=>console.assert(byRoute(k),'projects key has no district: '+k));
+</script>
+</body>
+</html>
